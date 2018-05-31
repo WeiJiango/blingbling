@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	   xmlns:context="http://www.springframework.org/schema/context"
+	   xmlns:aop="http://www.springframework.org/schema/aop" 
+	   xmlns:tx="http://www.springframework.org/schema/tx"
+	   xsi:schemaLocation="http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/aop
+        http://www.springframework.org/schema/aop/spring-aop-4.2.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd">
+	  <!-- 配置扫描路径 -->
+	 <context:component-scan base-package="com">
+	 </context:component-scan>
+		
+ 	<!--注入配置文件  -->
+ 	<bean id ="prop" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+ 		<property name="locations">
+ 			<array>
+ 				<value>classpath:jdbc.properties</value>
+ 			</array>
+ 		</property>
+ 	</bean>
+ 	<!-- 数据源 -->
+ 	<bean id="pooledDataSource" class="${dataSource}">
+ 		<property name="driverClass" value="${driverClass}"/>
+ 		<property name="jdbcURL" value="${jdbcURL}"/>
+ 		<property name="user" value="${user}"/>
+ 		<property name="password" value="${password}"/>
+ 	</bean>
+ 	<!-- spring整合mybaties配置 -->
+ 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+ 		<!-- 指定mybaties全局配置文件的位置 -->
+ 		<property  name="configLocation" value="classpath:mybatis-config.xml"></property>
+ 		<property name="datasource" ref="pooledDataSource"></property>
+ 		<!-- 指定mybaties的mapper配置文件位置 -->
+ 		<property name="mapperLocations" value="classpath:mapper/*.xml"></property>
+ 	</bean>
+ 	
+ 	<!-- 配置扫描器，将mybaties接口的实现加入到ioc容器中 -->
+ 	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+ 		<!--扫描所有的dao接口的实现  -->
+ 		<property name="basePackage" value="com.ServiceImpl"></property>
+ 	</bean>
+ 	
+ 	<!-- 事物控制 -->
+ 	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+ 		<!-- 把数据源注入到事物管理器当中 -->
+ 		<property name="datasource" ref="datasource"></property>		
+ 	</bean>
+ 	<!-- 配置事务 -->
+ 	<aop:config>
+ 		<!-- 切入点表达式  -->
+ 		<aop:pointcut expression="execution(* com.ServiceImpl..*(..))" id="txPoint"/>
+ 		<!-- 配置事物增强 -->
+ 		<aop:advisor advice-ref="txAdvice" pointcut-ref="txPoint"/>
+ 	</aop:config>
+ 	<!-- 配置事物增强 事物如何切入 -->
+ 	<tx:advice id="txAdvice">
+ 		<tx:attributes>
+ 			<!-- 所有方法都是事务方法 -->
+ 			<tx:method name="*"/>
+ 			<!-- 以get开始的所有方法 -->
+ 			<tx:method name="get*" read-only="true"/>
+ 		</tx:attributes>
+ 	</tx:advice>
+</beans>
